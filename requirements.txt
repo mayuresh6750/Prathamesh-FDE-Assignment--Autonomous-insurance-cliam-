@@ -1,0 +1,26 @@
+# Core LLM + orchestration
+langchain==1.2.18
+langchain-google-genai==4.2.2
+langgraph==1.1.10
+google-generativeai==0.8.5
+
+# Data validation & schemas
+pydantic==2.13.4
+pydantic-core==2.46.4
+
+# Data handling
+pandas==2.3.1
+
+# Fuzzy name matching (for claimant eligibility R2)
+thefuzz==0.22.1
+python-Levenshtein==0.27.1
+
+# Environment variable loading
+python-dotenv==1.1.1
+
+# Testing
+pytest==8.4.1
+pytest-cov==6.1.0
+
+# Logging & output
+rich==14.0.0

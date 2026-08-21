@@ -1,0 +1,15 @@
+From: billing@apollohospitals.example
+Subject: FW: Claim - Lakshmi Krishnan - 09 Jan
+
+Claim reference: CLM-2026-0006
+Policy: POL-HL-884213
+Patient name: Lakshmi Krishnan
+Relationship to policy holder: Spouse
+Date of service: 09 January 2026
+Date submitted: 15 January 2026
+Provider: Apollo Hospitals, Greams Road, Chennai
+
+Treatment: Gallstone removal, laparoscopic cholecystectomy. Two day stay.
+
+Amount: Rs. 64,500
+Rupees Sixty Four Thousand Five Hundred Only

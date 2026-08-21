@@ -1,0 +1,9 @@
+policy_no,holder_name,plan,policy_start,policy_end,sum_insured_inr,sum_utilised_inr,dependants
+POL-HL-884213,Ramesh Krishnan,Family Floater Gold,2024-04-01,2026-03-31,500000,120000,"Lakshmi Krishnan; Aditya Krishnan"
+POL-HL-771902,Sunita Deshpande,Individual Silver,2025-01-15,2026-01-14,300000,45000,
+POL-HL-660418,Farhan Qureshi,Family Floater Gold,2023-07-01,2025-06-30,500000,380000,"Ayesha Qureshi"
+POL-HL-559327,Meera Nair,Individual Platinum,2025-06-01,2026-05-31,1000000,0,
+POL-HL-448116,Vikram Rathore,Family Floater Silver,2024-11-01,2026-10-31,400000,355000,"Priya Rathore; Kabir Rathore"
+POL-HL-337005,Anjali Sharma,Individual Gold,2025-03-20,2026-03-19,600000,60000,
+POL-HL-225894,Joseph Mathew,Family Floater Platinum,2025-02-01,2027-01-31,1200000,210000,"Elsa Mathew"
+POL-HL-114783,Devendra Yadav,Individual Silver,2025-09-01,2026-08-31,300000,15000,

@@ -1,0 +1,20 @@
+From: claims.intake@meridianhealth.example
+Subject: Claim submission - Joseph Mathew - cardiac procedure
+
+Please find below the claim details submitted by the hospital billing desk.
+
+Claim ref: CLM-2026-0002
+Policy: POL-HL-225894
+Patient: Mr. Joseph Mathew
+Service date: 22 January 2026
+Submitted: 30 January 2026
+Hospital: Amrita Institute of Medical Sciences, Kochi
+
+Procedure performed: Coronary angioplasty with single drug-eluting stent.
+Three day admission including one day in CCU. Cardiology consult and
+post-procedure echo included.
+
+Total billed: Rs 2,45,000
+In words: Rupees Two Lakh Forty Five Thousand Only
+
+Patient has no declared pre-existing cardiac history on file.

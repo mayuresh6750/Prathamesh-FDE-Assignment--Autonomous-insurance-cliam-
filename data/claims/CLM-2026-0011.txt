@@ -1,0 +1,18 @@
+From: intake@meridianhealth.example
+Subject: Claim - A. Krishnan - paediatric admission
+
+Claim ref: CLM-2026-0011
+Policy: POL-HL-884213
+Patient: Aditya Krishnan (minor, son of policy holder)
+DOS: 02 February 2026
+Submitted: 08 February 2026
+Provider: Rainbow Children's Hospital, Bengaluru
+
+Admitted with severe asthma exacerbation. Nebulisation, IV steroids, oxygen
+support. Four day stay including one night in paediatric HDU.
+
+Billed amount: Rs. 96,750
+Rupees Ninety Six Thousand Seven Hundred and Fifty Only
+
+Additional line item on the same invoice: prescription spectacles supplied
+during admission following routine vision screening, Rs. 4,200.
