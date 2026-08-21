@@ -42,11 +42,10 @@ from thefuzz import fuzz
 
 from models import AgentState, Decision, PolicyRecord, RuleViolation, ValidationResult
 from registry import ClaimRegistry
+from llm_client import get_llm
 
 load_dotenv()
 logger = logging.getLogger(__name__)
-
-MODEL_NAME = "gemini-3.6-flash"
 
 # ---------------------------------------------------------------------------
 # Constants
@@ -462,13 +461,7 @@ def _run_semantic_check(
     Returns None if the LLM call fails (caller will ESCALATE with uncertainty note).
     """
     try:
-        api_key = os.getenv("GOOGLE_API_KEY")
-        llm = ChatGoogleGenerativeAI(
-            model=MODEL_NAME,
-            google_api_key=api_key,
-            temperature=0,
-            max_retries=2,
-        )
+        llm = get_llm()
         structured_llm = llm.with_structured_output(SemanticCheckResult)
 
         plan_type = policy.plan_type if policy else "Unknown"

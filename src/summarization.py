@@ -18,11 +18,10 @@ from langchain_google_genai import ChatGoogleGenerativeAI
 from pydantic import BaseModel
 
 from models import AgentState
+from llm_client import get_llm
 
 load_dotenv()
 logger = logging.getLogger(__name__)
-
-MODEL_NAME = "gemini-3.6-flash"
 
 
 class SummaryOutput(BaseModel):
@@ -49,16 +48,6 @@ SUMMARY_USER_TEMPLATE = """
 {violations}
 """
 
-
-def _get_llm() -> ChatGoogleGenerativeAI:
-    api_key = os.getenv("GOOGLE_API_KEY")
-    return ChatGoogleGenerativeAI(
-        model=MODEL_NAME,
-        google_api_key=api_key,
-        temperature=0,
-    )
-
-
 def run_summarization(state: AgentState) -> AgentState:
     """
     LangGraph node: Station 3 — Summarization.
@@ -70,7 +59,7 @@ def run_summarization(state: AgentState) -> AgentState:
         return state
 
     try:
-        llm = _get_llm()
+        llm = get_llm()
         structured_llm = llm.with_structured_output(SummaryOutput)
 
         if state.extraction_error:

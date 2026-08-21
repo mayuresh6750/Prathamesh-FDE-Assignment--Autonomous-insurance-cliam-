@@ -25,10 +25,10 @@ import logging
 import os
 
 from dotenv import load_dotenv
-from langchain_google_genai import ChatGoogleGenerativeAI
 from pydantic import ValidationError
 
 from models import AgentState, ExtractedClaim
+from llm_client import get_llm
 
 load_dotenv()
 logger = logging.getLogger(__name__)
@@ -38,20 +38,6 @@ logger = logging.getLogger(__name__)
 # ---------------------------------------------------------------------------
 
 MODEL_NAME = "gemini-3.6-flash"
-
-def _get_llm() -> ChatGoogleGenerativeAI:
-    """Initialise the Gemini LLM with structured output capability."""
-    api_key = os.getenv("GOOGLE_API_KEY")
-    if not api_key:
-        raise EnvironmentError(
-            "GOOGLE_API_KEY not found. Copy .env.example to .env and add your key."
-        )
-    return ChatGoogleGenerativeAI(
-        model=MODEL_NAME,
-        google_api_key=api_key,
-        temperature=0,          # Deterministic — we want facts, not creativity
-        max_retries=3,          # Retry up to 3x on transient 503/overload errors
-    )
 
 
 # ---------------------------------------------------------------------------
@@ -111,7 +97,7 @@ def run_extraction(state: AgentState) -> AgentState:
     logger.info(f"[{state.claim_id}] Starting extraction...")
 
     try:
-        llm = _get_llm()
+        llm = get_llm()
         structured_llm = llm.with_structured_output(ExtractedClaim)
 
         messages = [
