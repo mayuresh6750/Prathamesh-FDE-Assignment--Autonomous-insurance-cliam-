@@ -50,7 +50,7 @@ def _get_llm() -> ChatGoogleGenerativeAI:
         model=MODEL_NAME,
         google_api_key=api_key,
         temperature=0,          # Deterministic — we want facts, not creativity
-        max_retries=2,
+        max_retries=3,          # Retry up to 3x on transient 503/overload errors
     )
 
 
