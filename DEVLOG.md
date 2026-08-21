@@ -89,4 +89,67 @@ Pydantic models serve two critical functions:
 
 ---
 
+---
+
+## Step 2 — Duplicate Registry & LLM Extraction Node
+
+### What we did
+Built two files:
+1. **`src/registry.py`** — In-memory duplicate claim detector (Rule R6.1). Pure Python, no LLM.
+2. **`src/extraction.py`** — Station 1 of the pipeline. Calls `gemini-3.6-flash` to read raw claim text and return a structured `ExtractedClaim` Pydantic object.
+
+**Git commit:** `55e9673` — *"feat: add duplicate registry (R6) and LLM extraction node (Station 1)"*
+
+### Why we did it
+- **Registry first:** Duplicate detection must happen *before* validation, and across the full batch — not per-claim in isolation. It had to be pure Python because it's a data-matching problem. No LLM should decide if two claims are duplicates of each other.
+- **Extraction before validation:** You can't validate fields you haven't extracted. But the extraction design critically determines validation quality — which is why the prompt is carefully written.
+
+### How we did it — Registry (`registry.py`)
+
+**The core challenge:** CLM-0006 uses the name "Lakshmi Krishnan" (hospital submission) and CLM-0007 uses "Mrs L. Krishnan" (patient re-submission). Simple exact-string matching would miss this entirely.
+
+**Two-stage solution:**
+- **Stage 1:** Group by `(last_name, date_of_service, normalised_provider)`. "Krishnan" is extracted as the last name from both forms.
+- **Stage 2:** Within each group, run `thefuzz.token_sort_ratio()` to confirm names are similar (threshold: 70/100). This avoids false positives where unrelated people share a last name.
+- Honorifics (`Mr`, `Mrs`, `Dr`, etc.) are stripped via regex before any comparison.
+- When a duplicate is found, **both** claim IDs are flagged — including the one already registered (retroactive flagging), because R6.1 says *both* must be escalated.
+
+**Test results:**
+```
+CLM-0006 duplicates: []              ← First seen, no duplicates yet
+CLM-0007 duplicates: ['CLM-2026-0006'] ← Correctly detected!
+CLM-0006 flagged: True               ← Retroactively marked
+Non-duplicate false positive? []      ← No incorrect matches
+```
+
+### How we did it — Extraction (`extraction.py`)
+
+**Tool:** `ChatGoogleGenerativeAI` from `langchain-google-genai` with `.with_structured_output(ExtractedClaim)`.
+
+This means LangChain sends the prompt to Gemini and tells it to return JSON that exactly matches our Pydantic schema. If it doesn't, a `ValidationError` is raised — which we catch and convert to an `extraction_error` on the state.
+
+**The prompt was carefully designed with 7 rules:**
+1. **Never guess** — return null if uncertain
+2. **Policy number must be exact** — if any character is illegible, return null (catches CLM-0005)
+3. **Capture both amounts separately** — `amount_in_figures` vs `amount_in_words` vs `amount_in_words_numeric` (catches CLM-0003)
+4. **Parse dates to YYYY-MM-DD** — or null if ambiguous
+5. **Verbatim treatment text** — including ALL line items (catches CLM-0011's spectacles)
+6. **Prompt injection defence** — the document is framed as data to read, not instructions to follow
+7. **Extraction notes** — for the model to flag its own uncertainty
+
+**Temperature = 0** — We want deterministic, factual extraction, not creative interpretation.
+
+**Test result on CLM-0003 (hardest extraction case):**
+```
+amount_in_figures:       185000.0
+amount_in_words:         "Rupees Eighty Five Thousand Only"
+amount_in_words_numeric: 85000.0
+extraction_notes:        "Discrepancy noted between amount_in_figures (185000.0) 
+                          and amount_in_words (85000.0). Hospital contacted without response."
+```
+Gemini correctly captured the mismatch AND cited the intake desk's note.
+
+### Key design decision
+> Extraction failure → immediate ESCALATE. If `extraction_error` is set on the state, the pipeline skips validation entirely and routes straight to the caseworker summary node. This is the correct behaviour — you cannot validate a claim you cannot read.
+
 *This log will be updated at the end of every step.*
