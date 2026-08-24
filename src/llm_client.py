@@ -1,41 +1,35 @@
 """
 llm_client.py
 -------------
-A utility to return an LLM instance with API key rotation to handle rate limits.
+A utility to return an LLM instance backed by Groq.
+
+Model: openai/gpt-oss-120b
+  - 120B parameter model on Groq's free tier with a high RPD limit.
+  - Does not have a "thinking" mode that conflicts with json_mode (unlike qwen3).
+  - groq/compound was avoided: only 250 RPD, burns quota via internal sub-calls.
+  - qwen/qwen3.6-27b was avoided: thinking mode conflicts with json_mode → 400 errors.
+  - Our prompts embed the explicit JSON schema so field names are always correct.
 """
 
 import os
-from itertools import cycle
 
-from langchain_google_genai import ChatGoogleGenerativeAI
+from langchain_groq import ChatGroq
 from dotenv import load_dotenv
 
 load_dotenv()
 
-MODEL_NAME = "gemini-3.6-flash"
+MODEL_NAME = "openai/gpt-oss-120b"
 
-# Load available API keys
-keys = []
-key1 = os.getenv("GOOGLE_API_KEY")
-if key1:
-    keys.append(key1)
 
-key2 = os.getenv("GOOGLE_API_KEY_2")
-if key2:
-    keys.append(key2)
+def get_llm() -> ChatGroq:
+    """Returns a ChatGroq instance using the GROQ_API_KEY from .env."""
+    api_key = os.getenv("GROQ_API_KEY")
+    if not api_key:
+        raise ValueError("No GROQ_API_KEY found in .env file.")
 
-if not keys:
-    raise ValueError("No GOOGLE_API_KEY found in environment.")
-
-# Create an infinite cycle iterator over the available keys
-_key_cycle = cycle(keys)
-
-def get_llm() -> ChatGoogleGenerativeAI:
-    """Returns a ChatGoogleGenerativeAI instance using the next key in rotation."""
-    next_key = next(_key_cycle)
-    return ChatGoogleGenerativeAI(
+    return ChatGroq(
         model=MODEL_NAME,
-        google_api_key=next_key,
+        groq_api_key=api_key,
         temperature=0,
-        max_retries=3,
+        max_retries=5,
     )

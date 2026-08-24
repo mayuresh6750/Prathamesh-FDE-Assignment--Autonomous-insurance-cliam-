@@ -4,7 +4,7 @@ summarization.py
 Station 3: Caseworker Summary Generation.
 
 Only runs if the final decision is ESCALATE.
-Uses Gemini to generate a concise, human-readable summary of WHY the claim
+Uses groq/compound to generate a concise, human-readable summary of WHY the claim
 was escalated, referencing the specific rules triggered.
 """
 
@@ -14,7 +14,6 @@ import logging
 import os
 
 from dotenv import load_dotenv
-from langchain_google_genai import ChatGoogleGenerativeAI
 from pydantic import BaseModel
 
 from models import AgentState
@@ -38,7 +37,13 @@ Rules for your summary:
 2. Explicitly name the rules that triggered the escalation (e.g., 'R3.4', 'R7.1').
 3. Focus ONLY on why the claim was escalated. Do not summarise the entire claim.
 4. If extraction failed entirely, state that the document could not be read.
-"""
+
+You MUST respond with ONLY a JSON object using EXACTLY this field name:
+{
+  "caseworker_summary": "your concise summary here"
+}
+
+Do not add any other keys. Do not wrap in markdown. Output raw JSON only."""
 
 SUMMARY_USER_TEMPLATE = """
 --- EXTRACTION ---
@@ -60,7 +65,7 @@ def run_summarization(state: AgentState) -> AgentState:
 
     try:
         llm = get_llm()
-        structured_llm = llm.with_structured_output(SummaryOutput)
+        structured_llm = llm.with_structured_output(SummaryOutput, method="json_mode")
 
         if state.extraction_error:
             extraction_text = f"EXTRACTION FAILED: {state.extraction_error}"

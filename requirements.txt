@@ -1,8 +1,7 @@
 # Core LLM + orchestration
 langchain==1.2.18
-langchain-google-genai==4.2.2
+langchain-groq==0.3.2
 langgraph==1.1.10
-google-generativeai==0.8.5
 
 # Data validation & schemas
 pydantic==2.13.4

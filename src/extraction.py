@@ -7,10 +7,10 @@ Reads the raw text of a claim document and returns a validated
 ExtractedClaim Pydantic object.
 
 Design decisions:
-- Uses gemini-3.6-flash via langchain-google-genai.
-- Uses `with_structured_output(ExtractedClaim)` to force schema compliance.
-  If Gemini returns malformed JSON, LangChain raises a ValidationError which
-  we catch and convert into an extraction_error on the AgentState.
+- Uses groq/compound via langchain-groq with json_mode structured output.
+- Uses `with_structured_output(ExtractedClaim, method='json_mode')` to force
+  schema compliance. If the model returns malformed JSON, LangChain raises a
+  ValidationError which we catch and convert into an extraction_error.
 - The prompt explicitly instructs the model to return None for uncertain
   fields — never to guess or infer.
 - Both amount_in_figures and amount_in_words are captured as SEPARATE fields
@@ -32,13 +32,6 @@ from llm_client import get_llm
 
 load_dotenv()
 logger = logging.getLogger(__name__)
-
-# ---------------------------------------------------------------------------
-# Model setup
-# ---------------------------------------------------------------------------
-
-MODEL_NAME = "gemini-3.6-flash"
-
 
 # ---------------------------------------------------------------------------
 # Extraction prompt
@@ -73,6 +66,23 @@ CRITICAL RULES you must follow without exception:
 
 7. EXTRACTION NOTES: Use this field to note anything unusual — poor scan quality,
    inconsistencies you noticed, fields you were uncertain about and why.
+
+You MUST respond with ONLY a JSON object using EXACTLY these field names:
+{
+  "claim_id": "string or null",
+  "policy_number": "string or null",
+  "claimant_name": "string or null",
+  "date_of_service": "YYYY-MM-DD or null",
+  "date_of_submission": "YYYY-MM-DD or null",
+  "provider": "string or null",
+  "treatment_description": "string or null",
+  "amount_in_figures": number or null,
+  "amount_in_words": "string or null",
+  "amount_in_words_numeric": number or null,
+  "extraction_notes": "string or null"
+}
+
+Do not add any other keys. Do not wrap in markdown. Output raw JSON only.
 """
 
 EXTRACTION_USER_TEMPLATE = """Please extract the structured data from the following claim document.
@@ -98,7 +108,7 @@ def run_extraction(state: AgentState) -> AgentState:
 
     try:
         llm = get_llm()
-        structured_llm = llm.with_structured_output(ExtractedClaim)
+        structured_llm = llm.with_structured_output(ExtractedClaim, method="json_mode")
 
         messages = [
             ("system", EXTRACTION_SYSTEM_PROMPT),

@@ -18,6 +18,7 @@ import csv
 import glob
 import logging
 import os
+import time
 from pathlib import Path
 
 from dotenv import load_dotenv
@@ -40,10 +41,15 @@ DATA_DIR = Path("data/claims")
 RESULTS_DIR = Path("results")
 OUTPUT_CSV = RESULTS_DIR / "adjudication_output.csv"
 
+# Delay between claims to stay under Groq free-tier 30 RPM limit.
+# At 3 LLM calls per claim, 15s gap keeps us at ~12 RPM — well under the limit.
+# This prevents retry storms that burn through the 250 RPD daily quota.
+INTER_CLAIM_DELAY_SECONDS = 15
+
 
 def main():
-    if not os.getenv("GOOGLE_API_KEY"):
-        logger.error("GOOGLE_API_KEY is not set. Please update your .env file.")
+    if not os.getenv("GROQ_API_KEY"):
+        logger.error("GROQ_API_KEY is not set. Please add it to your .env file.")
         return
 
     # Ensure results directory exists
@@ -93,7 +99,17 @@ def main():
         if final_state.get("extraction_error"):
             decision = "ESCALATE"
             rules_triggered = ["EXTRACTION_FAILED"]
-            summary = final_state.get("extraction_error")
+            err = str(final_state.get("extraction_error", ""))
+            if "RateLimitError" in err or "rate_limit_exceeded" in err:
+                summary = (
+                    "Document could not be processed: API rate limit reached. "
+                    "Claim escalated automatically for manual caseworker review."
+                )
+            else:
+                summary = (
+                    "Document extraction failed — the claim document could not be "
+                    "parsed into structured data. Escalated for manual review."
+                )
         elif final_state.get("final_decision"):
             decision = final_state.get("final_decision").value
             val_res = final_state.get("validation_result")
@@ -118,7 +134,35 @@ def main():
 
         logger.info(f"Completed {claim_id}: {decision}")
 
-    # 5. Save results
+        # Rate-limit guard: pause between claims to avoid burning RPD quota on retries
+        logger.info(f"Waiting {INTER_CLAIM_DELAY_SECONDS}s before next claim (rate-limit guard)...")
+        time.sleep(INTER_CLAIM_DELAY_SECONDS)
+
+    # 5. Post-processing: catch retroactively flagged duplicates (R6.1)
+    # When CLM-0006 is processed first, no duplicate exists yet, so it passes.
+    # When CLM-0007 comes in, the registry retroactively flags CLM-0006 in memory.
+    # But CLM-0006 has already been adjudicated. This pass corrects that.
+    logger.info("Running post-processing duplicate check...")
+    for row in results_data:
+        cid = row["Claim ID"]
+        if registry.is_flagged(cid) and row["Outcome"] != "ESCALATE":
+            logger.info(
+                f"[{cid}] Retroactively upgrading to ESCALATE (R6.1 — duplicate detected "
+                f"after initial adjudication)."
+            )
+            existing_rules = row["Triggered Rules"]
+            row["Outcome"] = "ESCALATE"
+            row["Triggered Rules"] = (
+                f"{existing_rules}, R6.1" if existing_rules else "R6.1"
+            )
+            row["Caseworker Summary"] = (
+                f"This claim was retroactively flagged as a potential duplicate (R6.1) "
+                f"during batch post-processing. A later claim in the same batch was "
+                f"submitted for the same claimant, date, and provider. Both claims must "
+                f"be reviewed by a caseworker before any payment is made."
+            )
+
+    # 6. Save results
     logger.info("-" * 60)
     logger.info(f"Batch complete. Writing results to {OUTPUT_CSV}")
     

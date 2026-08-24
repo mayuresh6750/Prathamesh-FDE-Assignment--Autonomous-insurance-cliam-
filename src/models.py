@@ -183,7 +183,7 @@ class AgentState(BaseModel):
     validation_result: Optional[ValidationResult] = Field(default=None)
 
     # After Station 3 (Caseworker Summary — only if ESCALATE)
-    exception_summary: Optional[str] = Field(
+    caseworker_summary: Optional[str] = Field(
         default=None,
         description="Written for the caseworker. Names every rule that fired, "
                     "explains what is uncertain, and states what they need to check."
